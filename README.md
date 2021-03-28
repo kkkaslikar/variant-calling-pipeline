@@ -98,6 +98,33 @@ The following files have not been uploaded to the repository due to size restric
 4. The genome reference file.
 4. The `bowtie2` index files.
 
+# Final output
+
+The final output of the pipeline is a set of vcf files with the snps common between those called by `freebayes` and those by `bcftools`.
+
+The final output is contained in the directory "consensus", which contains the following files:
+
+``` bash
+0000.bcf
+0001.bcf
+0002.bcf
+0003.bcf
+```
+
+The description of the file contents is:
+
+``` bash
+This file was produced by vcfisec.
+The command line was:	bcftools isec  -c snps -O b -p consensus NA12878.hiseq.wgs_chr20_2mb.30xPE_freebayes_snpEff.vcf.gz NA12878.hiseq.wgs_chr20_2mb.30xPE_bcftools_snpEff.vcf.gz
+
+Using the following file names:
+consensus/0000.bcf	for records private to	NA12878.hiseq.wgs_chr20_2mb.30xPE_freebayes_snpEff.vcf.gz
+consensus/0001.bcf	for records private to	NA12878.hiseq.wgs_chr20_2mb.30xPE_bcftools_snpEff.vcf.gz
+consensus/0002.bcf	for records from NA12878.hiseq.wgs_chr20_2mb.30xPE_freebayes_snpEff.vcf.gz shared by both	NA12878.hiseq.wgs_chr20_2mb.30xPE_freebayes_snpEff.vcf.gz NA12878.hiseq.wgs_chr20_2mb.30xPE_bcftools_snpEff.vcf.gz
+consensus/0003.bcf	for records from NA12878.hiseq.wgs_chr20_2mb.30xPE_bcftools_snpEff.vcf.gz shared by both	NA12878.hiseq.wgs_chr20_2mb.30xPE_freebayes_snpEff.vcf.gz NA12878.hiseq.wgs_chr20_2mb.30xPE_bcftools_snpEff.vcf.gz
+```
+
+
 # Content of Snakefile
 
 The following is the content of the Snakefile:
