@@ -39,28 +39,25 @@ def list_files(dirpath="./", givepath = False):
 
 genome="Homo_sapiens.GRCh38.dna.primary_assembly.fa"
 
-samples = [f.strip(".sorted.bam") for f in list_files() if f.endswith("sorted.bam")]
-
-tools = ["bcftools", "freebayes"]
+samples = [f.strip(".sorted.bam") for f in list_files() if f.endswith(".sorted.bam")]
 
 rule all:
   input: "consensus"
   
 
-
 rule get_pileup:
   input:
     gen = genome,
-    aln = expand("{sample}.sorted.bam", sample = samples)
-  output: expand("{sample}.bcf", sample = samples)
+    aln = "{sample}.sorted.bam"
+  output: "{sample}.bcf"
   threads: 4
   shell:
     "bcftools mpileup -f {input.gen} {input.aln} --threads {threads} -q 20- -O b -o {output}"
 
 
 rule call_var_bcftools:
-  input: expand("{sample}.bcf" , sample = samples)
-  output: expand("{sample}_bcftools_called.bcf", sample = samples)
+  input: "{sample}.bcf"
+  output: "{sample}_bcftools_called.bcf"
   shell:
     "bcftools call -v -m -O b -o {output} {input}"
 
@@ -68,56 +65,63 @@ rule call_var_bcftools:
 rule call_var_freebayes:
   input:
     gen=genome,
-    aln = expand("{sample}.sorted.bam" , sample = samples),
-  output: expand("{sample}_freebayes_called.vcf", sample = samples)
+    aln = "{sample}.sorted.bam"
+  output: "{sample}_freebayes_called.vcf"
   shell:
     "freebayes -f {input.gen} -q 20 {input.aln} > {output}"
     
 
 rule filter_bcftools_calls:
-  input: expand("{sample}_bcftools_called.bcf" , sample = samples)
-  output: expand("{sample}_bcftools_called_filtered.vcf", sample = samples)
+  input: "{sample}_bcftools_called.bcf"
+  output: "{sample}_bcftools_called_filtered.vcf"
   shell:
     "bcftools filter  -i 'DP>5 & QUAL>20 & TYPE=\"snp\"' -O v -o {output} {input}"
 
 
 rule filter_freebayes_calls:
-  input: expand("{sample}_freebayes_called.vcf" , sample = samples)
-  output: expand("{sample}_freebayes_called_filtered.vcf", sample = samples)
+  input: "{sample}_freebayes_called.vcf"
+  output: "{sample}_freebayes_called_filtered.vcf"
   shell:
     "bcftools filter  -i 'FMT/DP>5 & QUAL>20 & TYPE=\"snp\"' -O v -o {output} {input}"
 
 
 rule annotate_freebayes:
-  input: expand("{sample}_freebayes_called_filtered.vcf", sample = samples)
+  input: "{sample}_freebayes_called_filtered.vcf"
   output:
-    main=expand("{sample}_freebayes_snpEff.vcf", sample = samples),
-    report=expand("{sample}_freebayes_snpEff.html", sample = samples)
+    main="{sample}_freebayes_snpEff.vcf",
+    report="{sample}_freebayes_snpEff.html"
   shell:
     "snpEff eff -s {output.report} hg38 {input} > {output.main}"
 
 rule annotate_bcftools:
-  input: expand("{sample}_bcftools_called_filtered.vcf", sample = samples)
+  input: "{sample}_bcftools_called_filtered.vcf"
   output:
-    main=expand("{sample}_bcftools_snpEff.vcf", sample = samples),
-    report=expand("{sample}_bcftools_snpEff.html", sample = samples)
+    main="{sample}_bcftools_snpEff.vcf",
+    report="{sample}_bcftools_snpEff.html"
   shell:
     "snpEff eff -s {output.report} hg38 {input} > {output.main}"
 
-rule convert_index:
+rule convert_index_bcftools:
   input:
-    bcf=expand("{sample}_bcftools_snpEff.vcf", sample = samples),
-    fb=expand("{sample}_freebayes_snpEff.vcf", sample = samples)
+    bcf="{sample}_bcftools_snpEff.vcf"
   output:
-    bcf=expand("{sample}_bcftools_snpEff.vcf.gz", sample = samples),
-    fb=expand("{sample}_freebayes_snpEff.vcf.gz", sample = samples)
+    bcf="{sample}_bcftools_snpEff.vcf.gz"
   shell:
-    "bcftools view {input.bcf} -O z -o {output.bcf}; bcftools index {output.bcf}; bcftools view {input.fb} -O z -o {output.fb}; bcftools index {output.fb}"
+    "bcftools view {input.bcf} -O z -o {output.bcf}; bcftools index {output.bcf}"
+
+rule convert_index_freebayes:
+  input:
+    fb="{sample}_freebayes_snpEff.vcf"
+  output:
+    fb="{sample}_freebayes_snpEff.vcf.gz"
+  shell:
+    "bcftools view {input.fb} -O z -o {output.fb}; bcftools index {output.fb}"
 
 rule intersect:
   input:
-    bcf=expand("{sample}_bcftools_snpEff.vcf.gz", sample = samples),
-    fb=expand("{sample}_freebayes_snpEff.vcf.gz", sample = samples)
-  output: directory("consensus")
+    bcf= expand("{sample}_bcftools_snpEff.vcf.gz", sample = samples),
+    fb = expand("{sample}_freebayes_snpEff.vcf.gz", sample = samples)
+  output:
+    d=directory("consensus")
   shell:
-    "bcftools isec -c snps {input.fb} {input.bcf} -O b -p {output}"
+    "bcftools isec -c snps {input.fb} {input.bcf} -O b -p {output.d}"
