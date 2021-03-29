@@ -125,6 +125,15 @@ consensus/0003.bcf	for records from NA12878.hiseq.wgs_chr20_2mb.30xPE_bcftools_s
 ```
 
 
+# DAG graph and rule graph
+
+The following is the DAG representing this pipeline:
+
+![DAG](./dag.png)
+
+The following is the rule graph representing this pipeline:
+
+![DAG](./rulegraph.png)
 # Content of Snakefile
 
 The following is the content of the Snakefile:
@@ -261,12 +270,3 @@ rule intersect:
 
 ```
 
-# DAG graph and rule graph
-
-The following is the DAG representing this pipeline:
-
-![DAG](./dag.png)
-
-The following is the rule graph representing this pipeline:
-
-![DAG](./rulegraph.png)
